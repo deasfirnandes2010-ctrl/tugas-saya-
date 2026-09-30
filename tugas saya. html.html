@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="A simple to-do list to organize your day." />
+  <title>My Tasks</title>
+
+  <!-- Font (opsional). Jika offline, browser otomatis memakai font cadangan. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+/* ==========================================================
+   My Tasks — style.css
+   Isi file ini:
+   1. Warna tema (light & dark) memakai CSS variables
+   2. Reset & pengaturan dasar
+   3. Komponen: header, form, filter, task, empty state, footer
+   4. Animasi
+   5. Responsive (tablet & mobile)
+   ========================================================== */
+
+
+/* ---------- 1. WARNA TEMA ----------
+   Semua warna disimpan di variabel (--nama). Untuk dark mode kita
+   cukup mengganti nilai variabelnya, bukan menulis ulang semua aturan. */
+:root {
+  color-scheme: light;
+
+  --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --bg: #eef0fa;
+  --card: #ffffff;
+  --surface: #f6f7fd;
+  --text: #1d1e33;
+  --text-muted: #5f6280;
+  --border: #e1e3f2;
+  --border-hover: #c5c8ea;
+  --border-strong: #8b8fbf;
+
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --on-accent: #ffffff;
+  --accent-soft: #e9e8fd;
+  --accent-strong: #3730a3;
+  --focus: #4f46e5;
+
+  --danger-bg: #fde8ea;
+  --danger-text: #b42335;
+
+  --low-bg: #e1f4e8;
+  --low-text: #17693b;
+  --medium-bg: #fdf0d3;
+  --medium-text: #8a4b00;
+  --high-bg: #fde6e8;
+  --high-text: #a4222f;
+
+  --shadow: 0 1px 2px rgba(29, 30, 51, 0.05), 0 16px 40px rgba(60, 64, 140, 0.12);
+
+  --radius-card: 24px;
+  --radius-control: 14px;
+
+  /* Transisi warna yang dipakai bersama, agar pergantian tema mulus */
+  --theme-transition: background-color 0.3s ease, color 0.3s ease,
+    border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Nilai variabel untuk dark mode (aktif saat <html data-theme="dark">) */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0e0f1a;
+  --card: #191a2a;
+  --surface: #212238;
+  --text: #eceefc;
+  --text-muted: #a4a7c6;
+  --border: #2f3150;
+  --border-hover: #46497c;
+  --border-strong: #7a7eb0;
+
+  --accent: #5b57e8;
+  --accent-hover: #6360ee;
+  --on-accent: #ffffff;
+  --accent-soft: #2a2b5a;
+  --accent-strong: #bcbbff;
+  --focus: #a5a3ff;
+
+  --danger-bg: #3d1f27;
+  --danger-text: #ff9aa5;
+
+  --low-bg: #17382a;
+  --low-text: #7fdca3;
+  --medium-bg: #3d2f12;
+  --medium-text: #f5c46f;
+  --high-bg: #3d1f27;
+  --high-text: #ff9aa5;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+
+/* ---------- 2. RESET & DASAR ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  transition: var(--theme-transition);
+}
+
+/* Atribut [hidden] harus selalu menyembunyikan elemen,
+   walaupun elemen itu punya display: flex/grid di CSS lain. */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 40px 16px 56px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Garis fokus yang jelas untuk pengguna keyboard */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Disembunyikan secara visual, tetapi tetap terbaca screen reader */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+
+/* ---------- 3. KOMPONEN ---------- */
+
+/* Card utama di tengah halaman */
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+}
+
+/* --- Header --- */
+.app-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 4.5vw + 0.5rem, 2rem);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.15;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+/* --- Tombol ikon (dipakai di banyak tempat) --- */
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+  color: var(--text-muted);
+}
+
+.icon-button:hover {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.icon-button.delete-btn:hover {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.icon-button.save-btn {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.icon-button.save-btn:hover {
+  background: var(--accent-hover);
+  color: var(--on-accent);
+}
+
+/* --- Tombol tema: tampilkan bulan (light) atau matahari (dark) --- */
+.theme-toggle {
+  width: 44px;
+  height: 44px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.theme-toggle .icon-sun {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-sun {
+  display: block;
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-moon {
+  display: none;
+}
+
+/* --- Form tambah task --- */
+.task-form {
+  display: grid;
+  gap: 12px;
+}
+
+/* Gaya bersama untuk input, select, dan input tanggal */
+.control {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-control);
+}
+
+.control::placeholder {
+  color: var(--text-muted);
+}
+
+.control:hover {
+  border-color: var(--border-hover);
+}
+
+.control:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Kelas .has-error ditambahkan oleh JavaScript saat validasi gagal */
+.control.has-error {
+  border-color: var(--danger-text);
+}
+
+.control.has-error:focus-visible {
+  box-shadow: 0 0 0 3px var(--danger-bg);
+}
+
+.task-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field label {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.btn-primary {
+  min-height: 46px;
+  padding: 12px 24px;
+  background: var(--accent);
+  border: 0;
+  border-radius: var(--radius-control);
+  color: var(--on-accent);
+  font-weight: 700;
+  transition: var(--theme-transition), transform 0.15s ease;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.form-message {
+  margin: 0;
+  color: var(--danger-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Kalau pesan kosong, jangan ambil ruang */
+.form-message:empty {
+  display: none;
+}
+
+/* --- Filter: All | Active | Completed --- */
+.filters {
+  display: flex;
+  gap: 4px;
+  margin: 24px 0 16px;
+  padding: 4px;
+  background: var(--surface);
+  border-radius: var(--radius-control);
+}
+
+.filter-btn {
+  flex: 1;
+  padding: 9px 16px;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.filter-btn:hover {
+  color: var(--text);
+}
+
+.filter-btn.is-active {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+/* --- Daftar task --- */
+.task-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.task {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.task:hover {
+  border-color: var(--border-hover);
+}
+
+/* Checkbox kustom (bawaan browser disembunyikan dengan appearance: none) */
+.task-checkbox {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  background-color: var(--card);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 15px;
+  border: 2px solid var(--border-strong);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.task-checkbox:checked {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+}
+
+.task-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0; /* agar teks panjang bisa turun ke baris berikutnya */
+}
+
+/* Garis coret disiapkan dari awal tetapi transparan,
+   sehingga saat selesai warnanya bisa berubah dengan mulus. */
+.task-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  text-decoration: line-through;
+  text-decoration-color: transparent;
+  transition: var(--theme-transition), text-decoration-color 0.25s ease;
+}
+
+.task.is-completed .task-title {
+  color: var(--text-muted);
+  text-decoration-color: currentColor;
+}
+
+.task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  transition: var(--theme-transition), opacity 0.25s ease;
+}
+
+.task.is-completed .task-meta {
+  opacity: 0.65;
+}
+
+.badge {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.badge-low {
+  background: var(--low-bg);
+  color: var(--low-text);
+}
+
+.badge-medium {
+  background: var(--medium-bg);
+  color: var(--medium-text);
+}
+
+.badge-high {
+  background: var(--high-bg);
+  color: var(--high-text);
+}
+
+.badge-overdue {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+/* Overdue hanya terlihat jika task BELUM selesai */
+.task.is-completed .badge-overdue {
+  display: none;
+}
+
+.task.is-past-due:not(.is-completed) .task-due {
+  color: var(--danger-text);
+  font-weight: 600;
+}
+
+.task-actions {
+  display: flex;
+  gap: 2px;
+}
+
+/* --- Mode edit task --- */
+.task-edit {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.edit-input {
+  min-height: 44px;
+  padding: 10px 12px;
+}
+
+.edit-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--danger-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.edit-error:empty {
+  display: none;
+}
+
+/* --- Empty state --- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 36px 16px 28px;
+  text-align: center;
+}
+
+.empty-icon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 10px;
+  background: var(--accent-soft);
+  border-radius: 50%;
+  color: var(--accent-strong);
+}
+
+.empty-icon .icon {
+  width: 32px;
+  height: 32px;
+}
+
+.empty-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.empty-text {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+/* --- Footer: counter & clear --- */
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.task-counter {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.925rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-text {
+  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.btn-text:hover:not(:disabled) {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.btn-text:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+
+/* ---------- 4. ANIMASI ---------- */
+
+/* Hanya task yang baru ditambahkan yang mendapat kelas .is-new */
+@keyframes task-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.task.is-new {
+  animation: task-in 0.3s ease-out;
+}
+
+/* Hormati pengguna yang mematikan animasi di pengaturan perangkatnya */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+/* ---------- 5. RESPONSIVE ---------- */
+
+/* Mobile & tablet kecil */
+@media (max-width: 560px) {
+  body {
+    padding: 16px 12px 40px;
+  }
+
+  .app {
+    padding: 20px 16px;
+    border-radius: 20px;
+  }
+
+  /* Priority & due date berdampingan, tombol Add Task selebar card */
+  .task-options {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .btn-primary {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  /* Area sentuh lebih besar (44px) */
+  .icon-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .task {
+    gap: 10px;
+    padding: 10px 6px 10px 12px;
+  }
+
+  .filter-btn {
+    padding: 10px 8px;
+  }
+}
+
+/* Layar sangat kecil */
+@media (max-width: 380px) {
+  .task-options {
+    grid-template-columns: 1fr;
+  }
+}
+
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+</style>
+
+  <!-- "defer" = script dijalankan setelah seluruh HTML selesai dibaca -->
+  
+</head>
+
+<body>
+  <main class="app">
+
+    <!-- ===== HEADER ===== -->
+    <header class="app-header">
+      <div>
+        <h1>MY TASKS</h1>
+        <p class="subtitle">Organize your day, one task at a time.</p>
+      </div>
+
+      <!-- Tombol dark/light mode. Ikon yang tampil diatur oleh CSS -->
+      <button id="theme-toggle" class="icon-button theme-toggle" type="button" aria-label="Switch to dark mode">
+        <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
+        <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+        </svg>
+      </button>
+    </header>
+
+    <!-- ===== FORM TAMBAH TASK =====
+         Karena memakai <form>, menekan Enter di input otomatis
+         memicu event "submit" (sama seperti klik tombol Add Task). -->
+    <form id="task-form" class="task-form" novalidate>
+      <label class="visually-hidden" for="task-input">Task name</label>
+      <input
+        id="task-input"
+        class="control"
+        type="text"
+        placeholder="What needs to be done?"
+        maxlength="120"
+        autocomplete="off"
+      />
+
+      <div class="task-options">
+        <div class="field">
+          <label for="priority-select">Priority</label>
+          <select id="priority-select" class="control">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="due-date-input">Due date</label>
+          <input id="due-date-input" class="control" type="date" />
+        </div>
+
+        <button type="submit" class="btn-primary">Add Task</button>
+      </div>
+
+      <!-- Pesan error validasi. role="alert" agar dibacakan screen reader -->
+      <p id="form-message" class="form-message" role="alert"></p>
+    </form>
+
+    <!-- ===== DAFTAR TASK ===== -->
+    <section aria-label="Your tasks">
+      <div class="filters" role="group" aria-label="Filter tasks">
+        <button class="filter-btn is-active" type="button" data-filter="all" aria-pressed="true">All</button>
+        <button class="filter-btn" type="button" data-filter="active" aria-pressed="false">Active</button>
+        <button class="filter-btn" type="button" data-filter="completed" aria-pressed="false">Completed</button>
+      </div>
+
+      <!-- Isi <ul> ini dibuat oleh JavaScript -->
+      <ul id="task-list" class="task-list"></ul>
+
+      <!-- Tampil hanya jika tidak ada task yang bisa ditampilkan -->
+      <div id="empty-state" class="empty-state" hidden>
+        <div class="empty-icon">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+        </div>
+        <h2 id="empty-title" class="empty-title"></h2>
+        <p id="empty-text" class="empty-text"></p>
+      </div>
+    </section>
+
+    <!-- ===== FOOTER: COUNTER & CLEAR ===== -->
+    <footer class="app-footer">
+      <p id="task-counter" class="task-counter" aria-live="polite">0 tasks remaining</p>
+      <button id="clear-completed" class="btn-text" type="button">Clear Completed</button>
+    </footer>
+
+    <noscript>
+      <p class="form-message">Please enable JavaScript to use this app.</p>
+    </noscript>
+  </main>
+<script>
+/* ==========================================================
+   My Tasks — script.js
+
+   Ide utama aplikasi ini:
+     data (array "tasks")  ->  render()  ->  tampilan di layar
+
+   Setiap kali data berubah (tambah, edit, hapus, centang):
+     1. ubah array `tasks`
+     2. simpan ke localStorage  (saveTasks)
+     3. gambar ulang tampilan   (render)
+   ========================================================== */
+
+
+/* ---------- 1. KONSTANTA ---------- */
+const TASKS_STORAGE_KEY = "my-tasks:tasks";
+const THEME_STORAGE_KEY = "my-tasks:theme";
+const PRIORITIES = ["low", "medium", "high"];
+const TRANSITION_DELAY = 300; // milidetik, sama dengan durasi transisi di CSS
+
+// Pesan untuk empty state
+const EMPTY_MESSAGES = {
+  none: { title: "You're all caught up! 🎉", text: "Add a task to get started." },
+  active: { title: "Nothing left to do 🙌", text: "Every task is completed." },
+  completed: { title: "No completed tasks yet", text: "Check off a task and it will show up here." },
+};
+
+// Bagian dalam ikon SVG (dipakai saat membuat tombol)
+const ICON_PATHS = {
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>',
+  trash:
+    '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>' +
+    '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+  check: '<polyline points="20 6 9 17 4 12"/>',
+  close: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+};
+
+
+/* ---------- 2. STATE (data yang berubah-ubah) ---------- */
+let tasks = loadTasks();     // daftar semua task
+let currentFilter = "all";   // "all" | "active" | "completed"
+let editingTaskId = null;    // id task yang sedang diedit (null = tidak ada)
+let newTaskId = null;        // id task yang baru ditambah (untuk animasi)
+
+
+/* ---------- 3. ELEMEN HTML ---------- */
+const taskForm = document.getElementById("task-form");
+const taskInput = document.getElementById("task-input");
+const prioritySelect = document.getElementById("priority-select");
+const dueDateInput = document.getElementById("due-date-input");
+const formMessage = document.getElementById("form-message");
+const taskList = document.getElementById("task-list");
+const emptyState = document.getElementById("empty-state");
+const emptyTitle = document.getElementById("empty-title");
+const emptyText = document.getElementById("empty-text");
+const taskCounter = document.getElementById("task-counter");
+const clearCompletedButton = document.getElementById("clear-completed");
+const themeToggle = document.getElementById("theme-toggle");
+const filterButtons = document.querySelectorAll(".filter-btn");
+
+
+/* ---------- 4. LOCALSTORAGE ----------
+   localStorage hanya bisa menyimpan teks, jadi array diubah dulu menjadi
+   teks JSON (JSON.stringify) dan dikembalikan lagi (JSON.parse).
+   try/catch mencegah aplikasi rusak jika data korup atau storage diblokir. */
+function readStorage(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (error) {
+    return null;
+  }
+}
+
+function writeStorage(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (error) {
+    console.warn("Could not save to localStorage:", error);
+  }
+}
+
+function loadTasks() {
+  const savedText = readStorage(TASKS_STORAGE_KEY);
+  if (!savedText) return []; // belum ada data -> daftar kosong
+
+  try {
+    const savedTasks = JSON.parse(savedText);
+    if (!Array.isArray(savedTasks)) return [];
+    return savedTasks.filter(isValidTask).map(normalizeTask);
+  } catch (error) {
+    console.warn("Could not read saved tasks:", error);
+    return [];
+  }
+}
+
+function saveTasks() {
+  writeStorage(TASKS_STORAGE_KEY, JSON.stringify(tasks));
+}
+
+// Memastikan data dari storage punya bentuk yang benar
+function isValidTask(task) {
+  return (
+    task !== null &&
+    typeof task === "object" &&
+    typeof task.id === "number" &&
+    typeof task.title === "string"
+  );
+}
+
+function normalizeTask(task) {
+  return {
+    id: task.id,
+    title: task.title,
+    completed: Boolean(task.completed),
+    priority: PRIORITIES.includes(task.priority) ? task.priority : "medium",
+    dueDate: typeof task.dueDate === "string" && task.dueDate ? task.dueDate : null,
+    createdAt: typeof task.createdAt === "string" ? task.createdAt : getTodayString(),
+  };
+}
+
+
+/* ---------- 5. FUNGSI BANTU (tanggal & pencarian) ---------- */
+
+// Tanggal hari ini dalam format "YYYY-MM-DD" memakai zona waktu perangkat.
+// (toISOString() memakai UTC, bisa salah hari di Indonesia dekat tengah malam.)
+function getTodayString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+// "2026-10-05" -> "October 5, 2026"
+function formatDueDate(dateString) {
+  const [year, month, day] = dateString.split("-").map(Number);
+  if (!year || !month || !day) return dateString;
+
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+// Deadline sudah lewat? Format YYYY-MM-DD bisa dibandingkan sebagai teks.
+function isPastDue(task) {
+  return task.dueDate !== null && task.dueDate < getTodayString();
+}
+
+function findTask(taskId) {
+  return tasks.find((task) => task.id === taskId);
+}
+
+function capitalize(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+
+/* ---------- 6. AKSI (mengubah data) ---------- */
+
+function addTask(title) {
+  const newTask = {
+    id: Date.now(),
+    title: title,
+    completed: false,
+    priority: prioritySelect.value,
+    dueDate: dueDateInput.value || null,
+    createdAt: getTodayString(),
+  };
+
+  tasks.unshift(newTask); // task terbaru tampil di paling atas
+  newTaskId = newTask.id;
+
+  // Jika sedang melihat "Completed", task baru tidak akan terlihat.
+  // Pindah ke "All" agar pengguna melihat hasil aksinya.
+  if (currentFilter === "completed") currentFilter = "all";
+
+  saveTasks();
+  render();
+}
+
+function toggleTask(taskId) {
+  const task = findTask(taskId);
+  if (!task) return;
+
+  task.completed = !task.completed;
+  saveTasks();
+  updateSummary();
+
+  // Ubah kelas langsung pada elemen agar transisi CSS berjalan mulus
+  const item = taskList.querySelector(`[data-id="${taskId}"]`);
+  if (item) item.classList.toggle("is-completed", task.completed);
+
+  // Di filter Active/Completed, task ini harus hilang dari daftar setelah transisi
+  if (currentFilter !== "all") {
+    setTimeout(render, TRANSITION_DELAY);
+  }
+}
+
+function startEditing(taskId) {
+  editingTaskId = taskId;
+  render();
+
+  const input = taskList.querySelector(".edit-input");
+  if (input) {
+    input.focus();
+    input.select();
+  }
+}
+
+function cancelEditing(taskId) {
+  editingTaskId = null;
+  render();
+  focusTaskButton(taskId, ".edit-btn");
+}
+
+function updateTaskTitle(taskId, newTitle) {
+  const task = findTask(taskId);
+  if (!task) return;
+
+  task.title = newTitle;
+  editingTaskId = null;
+  saveTasks();
+  render();
+  focusTaskButton(taskId, ".edit-btn");
+}
+
+function deleteTask(taskId) {
+  const task = findTask(taskId);
+  if (!task) return;
+
+  const confirmed = window.confirm(`Delete "${task.title}"?`);
+  if (!confirmed) return;
+
+  tasks = tasks.filter((item) => item.id !== taskId);
+  saveTasks();
+  render();
+}
+
+function clearCompletedTasks() {
+  tasks = tasks.filter((task) => !task.completed);
+  saveTasks();
+  render();
+}
+
+function setFilter(filter) {
+  currentFilter = filter;
+  editingTaskId = null;
+  render();
+}
+
+// Mengembalikan fokus keyboard ke tombol setelah tampilan digambar ulang
+function focusTaskButton(taskId, selector) {
+  const button = taskList.querySelector(`[data-id="${taskId}"] ${selector}`);
+  if (button) button.focus();
+}
+
+
+/* ---------- 7. RENDER (menggambar tampilan dari data) ---------- */
+
+function getVisibleTasks() {
+  if (currentFilter === "active") return tasks.filter((task) => !task.completed);
+  if (currentFilter === "completed") return tasks.filter((task) => task.completed);
+  return tasks;
+}
+
+function render() {
+  const visibleTasks = getVisibleTasks();
+
+  taskList.innerHTML = ""; // kosongkan daftar, lalu isi ulang
+  visibleTasks.forEach((task) => {
+    taskList.appendChild(createTaskElement(task));
+  });
+
+  updateEmptyState(visibleTasks.length);
+  updateFilterButtons();
+  updateSummary();
+
+  newTaskId = null; // animasi "muncul" hanya sekali
+}
+
+function updateEmptyState(visibleCount) {
+  if (visibleCount > 0) {
+    emptyState.hidden = true;
+    return;
+  }
+
+  const messageKey = tasks.length === 0 ? "none" : currentFilter;
+  emptyTitle.textContent = EMPTY_MESSAGES[messageKey].title;
+  emptyText.textContent = EMPTY_MESSAGES[messageKey].text;
+  emptyState.hidden = false;
+}
+
+function updateFilterButtons() {
+  filterButtons.forEach((button) => {
+    const isActive = button.dataset.filter === currentFilter;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+// Counter "5 tasks remaining" dan status tombol Clear Completed
+function updateSummary() {
+  const remaining = tasks.filter((task) => !task.completed).length;
+  const completedCount = tasks.length - remaining;
+
+  taskCounter.textContent = `${remaining} ${remaining === 1 ? "task" : "tasks"} remaining`;
+  clearCompletedButton.disabled = completedCount === 0;
+}
+
+
+/* ---------- 8. MEMBUAT ELEMEN HTML ----------
+   Kita memakai document.createElement + textContent (bukan innerHTML
+   untuk teks pengguna) supaya teks yang diketik tidak bisa
+   disalahgunakan sebagai kode HTML. */
+
+function createTaskElement(task) {
+  const item = document.createElement("li");
+  item.className = "task";
+  item.dataset.id = task.id;
+
+  if (task.completed) item.classList.add("is-completed");
+  if (isPastDue(task)) item.classList.add("is-past-due");
+  if (task.id === newTaskId) item.classList.add("is-new");
+
+  // Mode edit: tampilkan form edit saja
+  if (task.id === editingTaskId) {
+    item.appendChild(createEditForm(task));
+    return item;
+  }
+
+  item.appendChild(createCheckbox(task));
+  item.appendChild(createTaskDetails(task));
+  item.appendChild(createTaskActions(task));
+  return item;
+}
+
+function createCheckbox(task) {
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.id = `task-${task.id}`;
+  checkbox.className = "task-checkbox";
+  checkbox.checked = task.completed;
+  checkbox.addEventListener("change", () => toggleTask(task.id));
+  return checkbox;
+}
+
+function createTaskDetails(task) {
+  const details = document.createElement("div");
+  details.className = "task-details";
+
+  // <label for="..."> membuat klik pada teks juga mencentang checkbox
+  const title = document.createElement("label");
+  title.className = "task-title";
+  title.htmlFor = `task-${task.id}`;
+  title.textContent = task.title;
+
+  const meta = document.createElement("div");
+  meta.className = "task-meta";
+
+  const priorityBadge = document.createElement("span");
+  priorityBadge.className = `badge badge-${task.priority}`;
+  priorityBadge.textContent = capitalize(task.priority);
+  meta.appendChild(priorityBadge);
+
+  if (task.dueDate) {
+    const due = document.createElement("span");
+    due.className = "task-due";
+    due.textContent = `Due: ${formatDueDate(task.dueDate)}`;
+    meta.appendChild(due);
+  }
+
+  if (isPastDue(task)) {
+    const overdueBadge = document.createElement("span");
+    overdueBadge.className = "badge badge-overdue";
+    overdueBadge.textContent = "Overdue";
+    meta.appendChild(overdueBadge);
+  }
+
+  details.append(title, meta);
+  return details;
+}
+
+function createTaskActions(task) {
+  const actions = document.createElement("div");
+  actions.className = "task-actions";
+
+  const editButton = createIconButton("edit", `Edit "${task.title}"`, "edit-btn");
+  editButton.addEventListener("click", () => startEditing(task.id));
+
+  const deleteButton = createIconButton("trash", `Delete "${task.title}"`, "delete-btn");
+  deleteButton.addEventListener("click", () => deleteTask(task.id));
+
+  actions.append(editButton, deleteButton);
+  return actions;
+}
+
+function createEditForm(task) {
+  const form = document.createElement("div");
+  form.className = "task-edit";
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "control edit-input";
+  input.value = task.title;
+  input.maxLength = 120;
+  input.setAttribute("aria-label", "Edit task name");
+
+  const errorMessage = document.createElement("p");
+  errorMessage.className = "edit-error";
+  errorMessage.setAttribute("role", "alert");
+
+  const saveButton = createIconButton("check", "Save changes", "save-btn");
+  const cancelButton = createIconButton("close", "Cancel editing", "cancel-btn");
+
+  function saveEdit() {
+    const newTitle = input.value.trim();
+
+    if (newTitle === "") {
+      errorMessage.textContent = "Task name cannot be empty.";
+      input.classList.add("has-error");
+      input.focus();
+      return;
+    }
+
+    updateTaskTitle(task.id, newTitle);
+  }
+
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") saveEdit();
+    if (event.key === "Escape") cancelEditing(task.id);
+  });
+  input.addEventListener("input", () => {
+    errorMessage.textContent = "";
+    input.classList.remove("has-error");
+  });
+  saveButton.addEventListener("click", saveEdit);
+  cancelButton.addEventListener("click", () => cancelEditing(task.id));
+
+  form.append(input, saveButton, cancelButton, errorMessage);
+  return form;
+}
+
+function createIconButton(iconName, label, extraClass) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `icon-button ${extraClass}`;
+  button.setAttribute("aria-label", label);
+  button.title = label;
+  // Aman memakai innerHTML di sini: isinya SVG tetap milik kita sendiri
+  button.innerHTML = `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${ICON_PATHS[iconName]}</svg>`;
+  return button;
+}
+
+
+/* ---------- 9. VALIDASI FORM ---------- */
+
+function showFormMessage(message) {
+  formMessage.textContent = message;
+  taskInput.classList.add("has-error");
+  taskInput.setAttribute("aria-invalid", "true");
+}
+
+function clearFormMessage() {
+  formMessage.textContent = "";
+  taskInput.classList.remove("has-error");
+  taskInput.removeAttribute("aria-invalid");
+}
+
+function handleFormSubmit(event) {
+  event.preventDefault(); // cegah halaman reload
+
+  // trim() membuang spasi di awal/akhir, jadi "   " dianggap kosong
+  const title = taskInput.value.trim();
+
+  if (title === "") {
+    showFormMessage("Task cannot be empty. Please type what needs to be done.");
+    taskInput.focus();
+    return;
+  }
+
+  addTask(title);
+
+  // Kosongkan form untuk task berikutnya
+  taskInput.value = "";
+  dueDateInput.value = "";
+  prioritySelect.value = "medium";
+  clearFormMessage();
+  taskInput.focus();
+}
+
+
+/* ---------- 10. DARK MODE ---------- */
+
+function getInitialTheme() {
+  const savedTheme = readStorage(THEME_STORAGE_KEY);
+  if (savedTheme === "light" || savedTheme === "dark") return savedTheme;
+
+  // Pertama kali dibuka: ikuti pengaturan tema perangkat
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  return prefersDark ? "dark" : "light";
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme; // <html data-theme="dark">
+  const label = theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
+  themeToggle.setAttribute("aria-label", label);
+  themeToggle.title = label;
+}
+
+function toggleTheme() {
+  const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  applyTheme(nextTheme);
+  writeStorage(THEME_STORAGE_KEY, nextTheme);
+}
+
+
+/* ---------- 11. EVENT LISTENER & START ---------- */
+
+taskForm.addEventListener("submit", handleFormSubmit);
+taskInput.addEventListener("input", clearFormMessage);
+clearCompletedButton.addEventListener("click", clearCompletedTasks);
+themeToggle.addEventListener("click", toggleTheme);
+
+filterButtons.forEach((button) => {
+  button.addEventListener("click", () => setFilter(button.dataset.filter));
+});
+
+// Jalankan saat halaman dibuka
+applyTheme(getInitialTheme());
+render();
+
+</script>
+</body>
+</html>
